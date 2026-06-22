@@ -1,30 +1,37 @@
 ---
 name: daily-morning-brief
-description: "每日早安简报 — 天气+热搜，定时推送"
+description: "每日早安简报 — 天气+热搜新闻自动采集，定时推送。"
 version: 2.1.0
-triggers:
-  - 早安简报
-  - 早报
-  - morning brief
-  - 每日简报
-  - 每日推送
-categories:
-  - cron
-  - daily
-  - weather
-  - news
-  - push
+author: lzylipu
+license: MIT
+platforms: [linux]
+prerequisites:
+  env_vars: [BRIEF_AREA_ID, BRIEF_AREA_PATH, BRIEF_CITY]
+  services:
+    - name: NewsNow
+      url: https://github.com/ourongxing/newsnow
+      description: "本地部署的聚合新闻 API（可选，无则新闻为空）"
 metadata:
   hermes:
-    tags: [cron, daily, weather, news, push]
-    skill_type: personal
-    requires_script: true
+    tags: [daily, morning, brief, weather, news, cron, push, weixin, telegram, 2345, wttr, newsnow, 早安, 简报, 早报, 每日推送, 天气, 热搜]
+    related_skills: [daily-hotspot, newsnow-skill]
+    homepage: https://github.com/lzylipu/daily-morning-brief
+    category: personal
+    skill_type: cron
     supported_channels: [weixin, telegram, discord]
+    requires_script: true
 ---
 
 # Daily Morning Brief · 每日早安简报
 
 每天早上自动采集天气和热搜新闻，整理成一条简洁简报，定时推送到微信/Telegram。
+
+## When to Use
+
+- 用户想要每日定时推送天气+新闻简报
+- 用户说"早安简报""早报""morning brief""每日推送"
+- 用户想要配置 Cron 定时任务获取新闻
+- 用户想了解如何部署自动化新闻+天气推送
 
 ## 输出范文
 
@@ -106,11 +113,17 @@ metadata:
 
 | 变量 | 必填 | 默认值 | 说明 |
 |------|------|--------|------|
-| BRIEF_AREA_ID | ✅ | - | 2345天气区域编码（查看页面URL获取） |
-| BRIEF_AREA_TYPE | ❌ | 2 | 2=区县, 1=城市 |
-| BRIEF_AREA_PATH | ✅ | - | 2345天气URL路径段（如 jianxi/changsha 等） |
-| BRIEF_CITY | ✅ | - | wttr.in城市名（英文/拼音，如 Luoyang/Beijing） |
-| NN_BASE | ❌ | http://localhost:4444 | NewsNow 本地 API 地址 |
+| BRIEF_AREA_ID | ✅ | - | 2345天气区域编码 |
+| BRIEF_AREA_TYPE | ❌ | `2` | 2=区县, 1=城市 |
+| BRIEF_AREA_PATH | ✅ | - | 2345天气URL路径段 |
+| BRIEF_CITY | ✅ | - | wttr.in城市名（英文/拼音） |
+| NN_BASE | ❌ | `http://localhost:4444` | NewsNow 本地 API 地址 |
+
+### 获取 area_id 和 area_path
+
+1. 访问 [tianqi.2345.com](https://tianqi.2345.com) 搜索你的城市
+2. URL 格式 `tianqi.2345.com/{area_path}/{area_id}.htm`
+3. 例如 `tianqi.2345.com/jianxi/71777.htm` → `BRIEF_AREA_PATH=jianxi`, `BRIEF_AREA_ID=71777`
 
 ## Cron 配置
 
@@ -118,8 +131,13 @@ metadata:
 schedule: "0 7 * * *"      # 每天7:00
 skills: [daily-morning-brief]
 script: daily-morning-brief.py
-hooks_auto_accept: true     # 无人值守
+hooks_auto_accept: true     # 无人值守必须
 cron.wrap_response: false   # 推送去掉包头尾
 ```
 
 执行流程：脚本采集JSON → 注入Agent prompt → Agent按范文整理 → 推送
+
+## References
+
+- `references/2345-weather-api.md` — 2345天气 API 完整文档（端点/字段/踩坑）
+- `scripts/daily-morning-brief.py` — 数据采集脚本（纯标准库，无第三方依赖）
