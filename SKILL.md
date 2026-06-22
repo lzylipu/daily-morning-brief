@@ -1,22 +1,34 @@
 ---
 name: daily-morning-brief
-description: "每日早安简报 — 天气+热搜，定时推送。触发词：早安简报、早报、morning brief。"
-version: 2.0.0
+description: "每日早安简报 — 天气+热搜，定时推送"
+version: 2.1.0
+triggers:
+  - 早安简报
+  - 早报
+  - morning brief
+  - 每日简报
+  - 每日推送
+categories:
+  - cron
+  - daily
+  - weather
+  - news
+  - push
 metadata:
   hermes:
     tags: [cron, daily, weather, news, push]
+    skill_type: personal
+    requires_script: true
+    supported_channels: [weixin, telegram, discord]
 ---
 
-# Daily Morning Brief — 每日早安简报
+# Daily Morning Brief · 每日早安简报
 
-每天早上自动采集天气和热搜新闻，整理成一条简洁简报，定时推送。
+每天早上自动采集天气和热搜新闻，整理成一条简洁简报，定时推送到微信/Telegram。
 
-## 触发词
+## 输出范文
 
-- 早安简报 / 早报 / morning brief
-- 每日推送 / 每日简报
-
-## 输出范文（必须严格按此格式，一字不改模板结构）
+以下是标准输出格式，Agent 必须严格遵循：
 
 ```
 每日早安报 6月22日，星期一，农历五月初八，工作愉快，生活喜乐
@@ -40,63 +52,74 @@ metadata:
 【每日微语】：挺过艰难的岁月，那些日子终会变成生命中最精彩的篇章。
 ```
 
-## 格式硬规则（违反即为不合格输出）
+## 格式硬规则
 
-1. 首行：每日早安报 日期，星期X，农历XX，工作愉快，生活喜乐
-2. 天气只给3项：天气描述+温度范围+日出日落。绝对不给体感/湿度/风速/气压/能见度/生活指数/紫外线
-3. 预警行：仅有天气预警时才显示，无预警不显示
-4. 新闻15条连续编号：不用分类标题，1-15直接排列，每条结尾用分号
-5. 新闻排序：社会民生/趣味争议优先 > 消费维权 > 科技生活 > 文体 > 财经 > 国际
-6. 新闻字数：每条15-25字，交代清楚什么事
-7. 新闻笔法：接地气带细节，不要新闻联播体
-8. 同事件合并：同一事件多角度合一条
-9. 不要Markdown：不用表格、加粗、分隔线、代码块、星号
-10. 日出日落：HH:MM格式
-11. 结尾：【每日微语】一句金句
+1. **首行**：每日早安报 日期，星期X，农历XX，工作愉快，生活喜乐
+2. **天气3项**：天气描述 + 温度范围 + 日出日落。绝对不给体感/湿度/风速/气压/生活指数
+3. **预警行**：仅有预警时显示，无预警不显示
+4. **新闻15条**：连续编号1-15，不用分类标题，每条结尾分号
+5. **新闻排序**：社会民生/趣味 > 维权 > 科技 > 文体 > 财经 > 国际
+6. **新闻字数**：每条15-25字
+7. **新闻笔法**：接地气带细节，不要新闻联播体
+8. **同事件合并**：多角度合一条
+9. **不用Markdown**：无表格/加粗/分隔线/代码块/星号
+10. **日出日落**：HH:MM格式
+11. **结尾**：【每日微语】一句金句
 
 ## 数据源
 
-### 天气 - 2345天气（首选，温度准确）
+### 天气 — 2345天气
 
-- 七日预报: 页面内 fortyData JS 变量
-  - URL: https://tianqi.2345.com/{AREA_PATH}/{AREA_ID}.htm
-- 预警: GET /Pc/getWeather?area_id={AREA_ID}&area_type={AREA_TYPE}&module=2
-- 2345 区县级 real_time API (module=8/9) 始终返回空，不要用它
+- 七日预报: 页面内 `fortyData` JS 变量 → 第一条即当天
+  - URL: `https://tianqi.2345.com/{AREA_PATH}/{AREA_ID}.htm`
+- 预警: `GET /Pc/getWeather?area_id={AREA_ID}&area_type={AREA_TYPE}&module=2`
+- 概览(备用): `GET /Pc/getWeather?area_id={AREA_ID}&area_type={AREA_TYPE}&module=7`
+- ⚠️ 区县级 `real_time` API (module=8/9) 始终返回空，不要用
 
-### 日出日落 - wttr.in（仅此一项）
+### 日出日落 — wttr.in
 
-- URL: https://wttr.in/{CITY}?format=j1
-- 仅取 weather[0].astronomy[0].sunrise/sunset，不要取温度
-- User-Agent 设为 curl/7.68.0
+- URL: `https://wttr.in/{CITY}?format=j1`
+- 仅取 `weather[0].astronomy[0].sunrise/sunset`
+- User-Agent 必须设为 `curl/7.68.0`
 
-### 新闻 - NewsNow本地API（首选，多源聚合）
+### 新闻 — NewsNow 本地 API
 
-- 地址: http://{NN_BASE}/api/s?id=<source_id>
-- 必须带 Referer + Accept: application/json
-- 新闻源组合（按趣味性排序，6字去重取15条）:
-  - weibo(5) / toutiao(4) / douyin(3) / baidu(2)
-  - thepaper(2) / ifeng(2) / zhihu(2) / bilibili(1)
-  - ithome(1) / 36kr(1) / wallstreetcn(1)
+- 地址: `http://{NN_BASE}/api/s?id=<source_id>`
+- 必须带 `Referer` + `Accept: application/json`
+- 11源组合（6字去重取15条）:
 
-## 环境变量配置
+| 源 | 条数 | 权重 | 说明 |
+|----|------|------|------|
+| weibo | 5 | 1 | 微博热搜，社会民生+争议 |
+| toutiao | 4 | 2 | 头条，消费维权+社会 |
+| douyin | 3 | 3 | 抖音热点，猎奇/短视频 |
+| baidu | 2 | 5 | 百度，补充遗漏 |
+| thepaper | 2 | 8 | 澎湃，深度社会 |
+| ifeng | 2 | 14 | 凤凰，时政+国际 |
+| zhihu | 2 | 9 | 知乎，科技/职场 |
+| bilibili | 1 | 10 | B站，年轻向 |
+| ithome | 1 | 8 | IT之家，科技数码 |
+| 36kr | 1 | 13 | 36氪，创业商业 |
+| wallstreetcn | 1 | 15 | 华尔街见闻，财经 |
 
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| BRIEF_AREA_ID | (必填) | 2345天气区域编码（如71777） |
-| BRIEF_AREA_TYPE | 2 | 2=区县, 1=城市 |
-| BRIEF_AREA_PATH | (必填) | 2345天气URL路径段 |
-| BRIEF_CITY | (必填) | wttr.in城市名（拼音） |
-| NN_BASE | http://localhost:4444 | NewsNow本地API地址 |
+## 环境变量
 
-## Cron 配置示例
+| 变量 | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| BRIEF_AREA_ID | ✅ | - | 2345天气区域编码（查看页面URL获取） |
+| BRIEF_AREA_TYPE | ❌ | 2 | 2=区县, 1=城市 |
+| BRIEF_AREA_PATH | ✅ | - | 2345天气URL路径段（如 jianxi/changsha 等） |
+| BRIEF_CITY | ✅ | - | wttr.in城市名（英文/拼音，如 Luoyang/Beijing） |
+| NN_BASE | ❌ | http://localhost:4444 | NewsNow 本地 API 地址 |
 
-- 时间: 0 7 * * *（每天7点）
-- 技能: daily-morning-brief
-- 脚本: daily-morning-brief.py
-- hooks_auto_accept 必须为 true
-- cron.wrap_response 设为 false 去掉包头尾
+## Cron 配置
 
-## 支持文件
+```yaml
+schedule: "0 7 * * *"      # 每天7:00
+skills: [daily-morning-brief]
+script: daily-morning-brief.py
+hooks_auto_accept: true     # 无人值守
+cron.wrap_response: false   # 推送去掉包头尾
+```
 
-- scripts/daily-morning-brief.py - 数据采集脚本
-- references/2345-weather-api.md - 2345天气API文档
+执行流程：脚本采集JSON → 注入Agent prompt → Agent按范文整理 → 推送
