@@ -5,6 +5,8 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/platform-linux-orange)]()
 
+**[English](./README.en.md) | 中文**
+
 **Hermes Agent 技能**：每日早安简报 — 自动采集天气+热搜新闻，定时推送到微信/Telegram。
 
 > 🌤 天气用 2345（温度精准）+ wttr.in（日出日落）
